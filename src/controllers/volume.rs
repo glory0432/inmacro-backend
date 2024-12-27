@@ -17,7 +17,6 @@ pub async fn get_volume_data(
     State(state): State<Arc<AppState>>,
     Query(query): Query<GetVolumeDataRequest>,
 ) -> Result<impl IntoResponse, ApiError> {
-    info!("Hello World");
     let mut query_builder = QueryBuilder::new("SELECT SUM(total_volume) AS total_quantity, AVG(price) AS average_price, token_symbol, MAX(day_total_volume) as total_volume_day, exchange_id, date_trunc('hour', timestamp)");
 
     let mut start_time = Utc::now();
@@ -81,17 +80,14 @@ pub async fn get_volume_data(
         query_builder.push(" AND exchange_id=");
         query_builder.push_bind(exchange_id);
     }
-    info!("Hello World");
     if start_time != now_time {
         query_builder.push(" AND timestamp>=");
         query_builder.push_bind(start_time);
     }
     query_builder
         .push(" GROUP BY time_interval, exchange_id, token_symbol ORDER BY time_interval ASC");
-    info!("{}", query_builder.sql());
     let sql_query = query_builder.build();
     let query_result = sql_query.fetch_all(&state.crypto_data_db).await?;
-    info!("Hello World");
     let mut res: Vec<Vec<String>> = vec![];
     for item in query_result {
         let timestamp = item.get::<DateTime<Utc>, _>("time_interval");
@@ -124,23 +120,20 @@ pub async fn get_volume_data(
         res_item.push((total_volume * unit).to_string());
         res.push(res_item);
     }
-    info!("{}", res.len());
     return Ok(Json(json!(res)));
 }
 pub async fn get_24hr_volume_data(
     State(state): State<Arc<AppState>>,
 ) -> Result<impl IntoResponse, ApiError> {
     let mut res = vec![];
-    for exch_id in 0..=3 {
+    for exch_id in 0..=4 {
         let mut volume_quantity = 0.0;
         if exch_id != 1 {
-            info!("hey");
             let total_volume_query = format!("SELECT SUM(total_volume * price) AS volume FROM (SELECT * FROM volume_data WHERE exchange_id = {} ORDER BY timestamp DESC LIMIT 1440) a", exch_id);
             let mut query = QueryBuilder::new(total_volume_query);
             let query = query.build();
             let data = query.fetch_one(&state.crypto_data_db).await?;
             volume_quantity = data.get::<f64, _>("volume");
-            info!("wht");
         } else {
             let total_volume_query = format!("SELECT day_total_volume FROM volume_data WHERE exchange_id = 1 ORDER BY timestamp DESC LIMIT 1");
             let mut query = QueryBuilder::new(total_volume_query);
