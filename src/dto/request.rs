@@ -19,6 +19,18 @@ pub struct GetVolumeDataRequest {
 }
 
 #[derive(Debug, Deserialize)]
+pub struct GetBalanceDataRequest {
+    pub symbol: String,
+    pub interval: String,
+    pub exchange_id: Option<i64>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct GetLatestBalanceDataRequest {
+    pub exchange_id: i64,
+}
+
+#[derive(Debug, Deserialize)]
 pub struct Get24HVolumeDataRequest {
     pub symbol: String,
     pub interval: String,
